@@ -152,8 +152,10 @@ public class SrsFlvMuxer {
         worker = new Thread(new Runnable() {
             @Override
             public void run() {
-                if (!connect(rtmpUrl)) {
-                    return;
+                if(rtmpUrl != null) {
+                    if (!connect(rtmpUrl)) {
+                        return;
+                    }
                 }
 
                 while (!Thread.interrupted()) {
