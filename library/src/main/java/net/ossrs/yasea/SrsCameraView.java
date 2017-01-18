@@ -54,6 +54,8 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     private ConcurrentLinkedQueue<IntBuffer> mGLIntBufferCache = new ConcurrentLinkedQueue<>();
     private PreviewCallback mPrevCb;
 
+    private boolean isFlashOn = false;
+
     public SrsCameraView(Context context) {
         this(context, null);
     }
@@ -367,5 +369,21 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     public interface PreviewCallback {
 
         void onGetRgbaFrame(byte[] data, int width, int height);
+    }
+
+
+    public void toggleTorch(){
+        if(getCameraId() == 0) {
+            Camera.Parameters params = mCamera.getParameters();
+            if (!isFlashOn) {
+                params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+                mCamera.setParameters(params);
+                isFlashOn = true;
+            } else {
+                params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+                mCamera.setParameters(params);
+                isFlashOn = false;
+            }
+        }
     }
 }
