@@ -122,11 +122,13 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         surfaceTexture.getTransformMatrix(mSurfaceMatrix);
         Matrix.multiplyMM(mTransformMatrix, 0, mSurfaceMatrix, 0, mProjectionMatrix, 0);
         magicFilter.setTextureTransformMatrix(mTransformMatrix);
-
         magicFilter.onDrawFrame(mOESTextureId);
-        mGLIntBufferCache.add(magicFilter.getGLFboBuffer());
-        synchronized (writeLock) {
-            writeLock.notifyAll();
+
+        if (worker != null) {
+            mGLIntBufferCache.add(magicFilter.getGLFboBuffer());
+            synchronized (writeLock) {
+                writeLock.notifyAll();
+            }
         }
     }
 
@@ -217,7 +219,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         return mCamId;
     }
 
-    public boolean startCamera() {
+    public void enableEncoding() {
         worker = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -242,7 +244,23 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
             }
         });
         worker.start();
+    }
 
+    public void disableEncoding() {
+        if (worker != null) {
+            worker.interrupt();
+            try {
+                worker.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                worker.interrupt();
+            }
+            mGLIntBufferCache.clear();
+            worker = null;
+        }
+    }
+
+    public boolean startCamera() {
         if (mCamera == null) {
             mCamera = openCamera();
             if (mCamera == null) {
@@ -287,17 +305,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     }
 
     public void stopCamera() {
-        if (worker != null) {
-            worker.interrupt();
-            try {
-                worker.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                worker.interrupt();
-            }
-            mGLIntBufferCache.clear();
-            worker = null;
-        }
+        disableEncoding();
 
         if (mCamera != null) {
             mCamera.stopPreview();

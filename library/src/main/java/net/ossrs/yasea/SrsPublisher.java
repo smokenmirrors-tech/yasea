@@ -1,7 +1,5 @@
 package net.ossrs.yasea;
 
-import android.content.Context;
-import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.AutomaticGainControl;
@@ -61,6 +59,14 @@ public class SrsPublisher {
         }
     }
 
+    public void startCamera() {
+        mCameraView.startCamera();
+    }
+
+    public void stopCamera() {
+        mCameraView.stopCamera();
+    }
+
     public void startEncode() {
         if (!mEncoder.start()) {
             return;
@@ -85,10 +91,7 @@ public class SrsPublisher {
             }
         }
 
-        if (!mCameraView.startCamera()) {
-            mEncoder.stop();
-            return;
-        }
+        mCameraView.enableEncoding();
 
         aworker = new Thread(new Runnable() {
             @Override
@@ -103,7 +106,7 @@ public class SrsPublisher {
 
     public void stopEncode() {
         stopAudio();
-        mCameraView.stopCamera();
+        stopCamera();
         mEncoder.stop();
     }
 
