@@ -202,6 +202,7 @@ public class SrsFlvMuxer {
      * stop the muxer, disconnect RTMP connection.
      */
     public void stop() {
+        mFlvTagCache.clear();
         if (worker != null) {
             worker.interrupt();
             try {
@@ -210,7 +211,6 @@ public class SrsFlvMuxer {
                 e.printStackTrace();
                 worker.interrupt();
             }
-            mFlvTagCache.clear();
             worker = null;
         }
         flv.reset();
