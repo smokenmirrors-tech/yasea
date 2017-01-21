@@ -31,9 +31,9 @@ public class SrsEncoder {
     public static int vLandscapeHeight = 720;
     public static int vOutWidth = 720;   // Note: the stride of resolution must be set as 16x for hard encoding with some chip like MTK
     public static int vOutHeight = 1280;  // Since Y component is quadruple size as U and V component, the stride must be set as 32x
-    public static int vBitrate = 1200 * 1024;  // 1200 kbps
-    public static final int VFPS = 24;
-    public static final int VGOP = 48;
+    public static int vBitrate = 2000 * 1024;  // 1200 kbps
+    public static final int VFPS = 30;
+    public static final int VGOP = 60;
     public static final int ASAMPLERATE = 44100;
     public static int aChannelConfig = AudioFormat.CHANNEL_IN_STEREO;
     public static final int ABITRATE = 128 * 1024;  // 128 kbps
@@ -159,7 +159,8 @@ public class SrsEncoder {
         videoFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
         videoFormat.setInteger(MediaFormat.KEY_BIT_RATE, vBitrate);
         videoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, VFPS);
-        videoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, VGOP / VFPS);
+        videoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2);
+        videoFormat.setInteger(MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR);
         vencoder.configure(videoFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
         // add the video tracker to muxer.
         videoFlvTrack = flvMuxer.addTrack(videoFormat);
@@ -248,7 +249,7 @@ public class SrsEncoder {
     }
 
     public void setVideoHDMode() {
-        vBitrate = 1200 * 1024;  // 1200 kbps
+        vBitrate = 2000 * 1024;  // 1200 kbps
         x264Preset = "veryfast";
     }
 
