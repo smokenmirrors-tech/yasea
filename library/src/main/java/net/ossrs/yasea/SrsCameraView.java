@@ -10,6 +10,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.os.Build;
 import android.util.AttributeSet;
+import android.util.Log;
 
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
 import com.seu.magicfilter.utils.MagicFilterFactory;
@@ -193,25 +194,50 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
 
     public void setCameraId(int id) {
         mCamId = id;
-        setPreviewOrientation(mPreviewOrientation);
+        //setPreviewOrientation(mPreviewOrientation);
     }
 
     public void setPreviewOrientation(int orientation) {
         mPreviewOrientation = orientation;
-        Camera.CameraInfo info = new Camera.CameraInfo();
-        Camera.getCameraInfo(mCamId, info);
-        if (info.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
-            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                mPreviewRotation = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? 270 : 90;
-            } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                mPreviewRotation = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? 180 : 0;
-            }
-        } else if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+//        Camera.CameraInfo info = new Camera.CameraInfo();
+//        Camera.getCameraInfo(mCamId, info);
+//        if (info.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+//            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+//                mPreviewRotation = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? 270 : 90;
+//            } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+//                mPreviewRotation = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? 180 : 0;
+//            }
+//        } else if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+//            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+//                mPreviewRotation = 90;
+//            } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+//                mPreviewRotation = 0;
+//            }
+//        }
+//        if(mCamera != null){
+//            mCamera.setDisplayOrientation(mPreviewRotation);
+//        }
+    }
+
+    public void setPreviewRotation(int rotation){
+        if(mPreviewOrientation  == Configuration.ORIENTATION_PORTRAIT){
+            if (rotation < 45 || rotation > 315) {
                 mPreviewRotation = 90;
-            } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            } else
+            if (135 < rotation && rotation < 225) {
+                mPreviewRotation = 90;
+            }
+        }
+        if(mPreviewOrientation == Configuration.ORIENTATION_LANDSCAPE) {
+            if (45 < rotation && rotation < 135) {
+                mPreviewRotation = 180;
+            } else
+            if (225 < rotation && rotation < 315) {
                 mPreviewRotation = 0;
             }
+        }
+        if(mCamera != null){
+            mCamera.setDisplayOrientation(mPreviewRotation);
         }
     }
 
@@ -305,7 +331,9 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     }
 
     public void stopCamera() {
-        disableEncoding();
+//        //Commented out due to stopping the encoder on camera switch, but not stopping the stream
+//        //this lets us switch the camera around while streaming with no problem
+//        disableEncoding();
 
         if (mCamera != null) {
             mCamera.stopPreview();
@@ -394,5 +422,12 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
                 isFlashOn = false;
             }
         }
+    }
+
+    public void torchOff(){
+        Camera.Parameters params = mCamera.getParameters();
+        params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+        mCamera.setParameters(params);
+        isFlashOn = false;
     }
 }
