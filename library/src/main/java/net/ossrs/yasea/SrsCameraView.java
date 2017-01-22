@@ -305,8 +305,6 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     }
 
     public void stopCamera() {
-        disableEncoding();
-
         if (mCamera != null) {
             mCamera.stopPreview();
             mCamera.release();
