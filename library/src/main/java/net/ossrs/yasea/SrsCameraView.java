@@ -10,6 +10,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.os.Build;
 import android.util.AttributeSet;
+import android.util.Log;
 
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
 import com.seu.magicfilter.utils.MagicFilterFactory;
@@ -54,6 +55,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     private final Object writeLock = new Object();
     private ConcurrentLinkedQueue<IntBuffer> mGLIntBufferCache = new ConcurrentLinkedQueue<>();
     private PreviewCallback mPrevCb;
+    private Boolean isFlashOn = false;
 
     public SrsCameraView(Context context) {
         this(context, null);
@@ -376,5 +378,49 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     public interface PreviewCallback {
 
         void onGetRgbaFrame(byte[] data, int width, int height);
+    }
+
+    public void setPreviewRotation(int rotation){
+        if(mPreviewOrientation  == Configuration.ORIENTATION_PORTRAIT){
+            if (rotation < 45 || rotation > 315) {
+                mPreviewRotation = 90;
+            } else
+            if (135 < rotation && rotation < 225) {
+                mPreviewRotation = 90;
+            }
+        }
+        if(mPreviewOrientation == Configuration.ORIENTATION_LANDSCAPE) {
+            if (45 < rotation && rotation < 135) {
+                mPreviewRotation = 180;
+            } else
+            if (225 < rotation && rotation < 315) {
+                mPreviewRotation = 0;
+            }
+        }
+        if(mCamera != null){
+            mCamera.setDisplayOrientation(mPreviewRotation);
+        }
+    }
+    
+    public void toggleTorch(){
+        if(getCameraId() == 0) {
+            Camera.Parameters params = mCamera.getParameters();
+            if (!isFlashOn) {
+                params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+                mCamera.setParameters(params);
+                isFlashOn = true;
+            } else {
+                params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+                mCamera.setParameters(params);
+                isFlashOn = false;
+            }
+        }
+    }
+
+    public void torchOff(){
+        Camera.Parameters params = mCamera.getParameters();
+        params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+        mCamera.setParameters(params);
+        isFlashOn = false;
     }
 }
