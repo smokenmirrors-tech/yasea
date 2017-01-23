@@ -257,6 +257,10 @@ public class SrsEncoder {
         x264Preset = "superfast";
     }
 
+    public void setBitrate(int bitrate){
+        vBitrate = bitrate * 1024;
+    }
+
     public int getPreviewWidth() {
         return vPrevWidth;
     }
