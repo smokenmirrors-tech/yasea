@@ -173,6 +173,7 @@ public class SrsEncoder {
         videoFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, mVideoColorFormat);
         videoFormat.setInteger(MediaFormat.KEY_BIT_RATE, vBitrate);
         videoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 30); //sets FPS to 30, works for SDKs under 23
+        videoFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
         videoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2);
 
         vencoder.configure(videoFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
