@@ -8,6 +8,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.media.MediaRecorder;
+import android.os.Build;
 import android.util.Log;
 
 import java.io.IOException;
@@ -155,17 +156,32 @@ public class SrsEncoder {
         // setup the vencoder.
         // Note: landscape to portrait, 90 degree rotation, so we need to switch width and height in configuration
         MediaFormat videoFormat = MediaFormat.createVideoFormat(VCODEC, vOutWidth, vOutHeight);
+        //TODO: Look into KEY_MAX_WIDTH / KEY_MAX_HEIGHT for adaptive playback if twitch decoders support it
+
+        //Not sure exactly how it works, but something to look into.
+//        if (Build.VERSION.SDK_INT >= 24) {
+//            videoFormat.setInteger(MediaFormat.KEY_INTRA_REFRESH_PERIOD, 1);
+//        }
+        if (Build.VERSION.SDK_INT >= 23) {
+            videoFormat.setInteger(MediaFormat.KEY_PRIORITY, 0); //set codec to real-time priority
+            videoFormat.setInteger(MediaFormat.KEY_OPERATING_RATE, 30); //set fps to 30
+        }
+        if (Build.VERSION.SDK_INT >= 21) {
+            videoFormat.setInteger(MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR);
+        }
+
         videoFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, mVideoColorFormat);
-        videoFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
         videoFormat.setInteger(MediaFormat.KEY_BIT_RATE, vBitrate);
-        videoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, VFPS);
-        videoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, VGOP / VFPS);
+        videoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 30); //sets FPS to 30, works for SDKs under 23
+        videoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2);
+
         vencoder.configure(videoFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
         // add the video tracker to muxer.
         videoFlvTrack = flvMuxer.addTrack(videoFormat);
         videoMp4Track = mp4Muxer.addTrack(videoFormat);
 
         // start device and encoder.
+
         vencoder.start();
         aencoder.start();
         return true;

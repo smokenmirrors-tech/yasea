@@ -56,6 +56,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     private ConcurrentLinkedQueue<IntBuffer> mGLIntBufferCache = new ConcurrentLinkedQueue<>();
     private PreviewCallback mPrevCb;
     private Boolean isFlashOn = false;
+    private int oldPreviewRotation = -1;
 
     public SrsCameraView(Context context) {
         this(context, null);
@@ -381,27 +382,32 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     }
 
     public void setPreviewRotation(int rotation){
-        if(mPreviewOrientation  == Configuration.ORIENTATION_PORTRAIT){
-            if (rotation < 45 || rotation > 315) {
-                mPreviewRotation = 90;
-            } else
-            if (135 < rotation && rotation < 225) {
-                mPreviewRotation = 90;
+        if(rotation != oldPreviewRotation) {
+            if (mPreviewOrientation == Configuration.ORIENTATION_PORTRAIT) {
+                if (rotation < 45 || rotation > 315) {
+                    mPreviewRotation = 90;
+                } else if (135 < rotation && rotation < 225) {
+                    mPreviewRotation = 90;
+                }
             }
-        }
-        if(mPreviewOrientation == Configuration.ORIENTATION_LANDSCAPE) {
-            if (45 < rotation && rotation < 135) {
-                mPreviewRotation = 180;
-            } else
-            if (225 < rotation && rotation < 315) {
-                mPreviewRotation = 0;
+            if (mPreviewOrientation == Configuration.ORIENTATION_LANDSCAPE) {
+                if (45 < rotation && rotation < 135) {
+                    mPreviewRotation = 180;
+                } else if (225 < rotation && rotation < 315) {
+                    mPreviewRotation = 0;
+                }
             }
-        }
-        if(mCamera != null){
-            mCamera.setDisplayOrientation(mPreviewRotation);
+            if (mCamera != null) {
+                try {
+                    mCamera.setDisplayOrientation(mPreviewRotation);
+                    oldPreviewRotation = rotation;
+                } catch (RuntimeException e) {
+                    Log.e("LOGINOUTERROR", "setPreviewRotation: ", e);
+                }
+            }
         }
     }
-    
+
     public void toggleTorch(){
         if(getCameraId() == 0) {
             Camera.Parameters params = mCamera.getParameters();
@@ -423,4 +429,37 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         mCamera.setParameters(params);
         isFlashOn = false;
     }
+
+    @Override
+    public void onPause()
+    {
+        super.onPause();
+        if (mCamera != null) {
+            mCamera.stopPreview();
+            mCamera.release();
+            mCamera = null;
+        }
+
+
+    }
+
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        if (mCamera != null) {
+            mCamera.startPreview();
+        }
+    }
+
+//    @Override
+//    public void onDestroy() {
+//        if (mCamera != null) {
+//            mCamera.stopPreview();
+//            mCamera.release();
+//            mCamera = null;
+//        }
+//        super.onDestroy();
+//    }
+
 }
