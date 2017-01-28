@@ -1,5 +1,6 @@
 package net.ossrs.yasea;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.ImageFormat;
@@ -11,6 +12,7 @@ import android.opengl.Matrix;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Surface;
 
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
 import com.seu.magicfilter.utils.MagicFilterFactory;
@@ -57,6 +59,9 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     private PreviewCallback mPrevCb;
     private Boolean isFlashOn = false;
     private int oldPreviewRotation = -1;
+    private int oldMPreviewRotation = -1;
+
+    private Boolean backwardsPhone = false;
 
     public SrsCameraView(Context context) {
         this(context, null);
@@ -64,6 +69,10 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
 
     public SrsCameraView(Context context, AttributeSet attrs) {
         super(context, attrs);
+
+        if((Build.MODEL.equals("Nexus 5X") || Build.MODEL.equals("Nexus 6P") || Build.MODEL.equals("GALAXY S3"))){
+            backwardsPhone = true;
+        }
 
         setEGLContextClientVersion(2);
         setRenderer(this);
@@ -381,7 +390,35 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         void onGetRgbaFrame(byte[] data, int width, int height);
     }
 
+//    TODO: Use this code to create a proper rotation fix
+
+//    public static void setCameraDisplayOrientation(Activity activity,
+//                                                   int cameraId, android.hardware.Camera camera) {
+//        android.hardware.Camera.CameraInfo info =
+//                new android.hardware.Camera.CameraInfo();
+//        android.hardware.Camera.getCameraInfo(cameraId, info);
+//        int rotation = activity.getWindowManager().getDefaultDisplay()
+//                .getRotation();
+//        int degrees = 0;
+//        switch (rotation) {
+//            case Surface.ROTATION_0: degrees = 0; break;
+//            case Surface.ROTATION_90: degrees = 90; break;
+//            case Surface.ROTATION_180: degrees = 180; break;
+//            case Surface.ROTATION_270: degrees = 270; break;
+//        }
+//
+//        int result;
+//        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+//            result = (info.orientation + degrees) % 360;
+//            result = (360 - result) % 360;  // compensate the mirror
+//        } else {  // back-facing
+//            result = (info.orientation - degrees + 360) % 360;
+//        }
+//        camera.setDisplayOrientation(result);
+//    }
+
     public void setPreviewRotation(int rotation){
+        Log.i("ROTATIONFIX", "setPreviewRotation: rotation");
         if(rotation != oldPreviewRotation) {
             if (mPreviewOrientation == Configuration.ORIENTATION_PORTRAIT) {
                 if (rotation < 45 || rotation > 315) {
@@ -397,12 +434,18 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
                     mPreviewRotation = 0;
                 }
             }
-            if (mCamera != null) {
-                try {
-                    mCamera.setDisplayOrientation(mPreviewRotation);
-                    oldPreviewRotation = rotation;
-                } catch (RuntimeException e) {
-                    Log.e("LOGINOUTERROR", "setPreviewRotation: ", e);
+            if(oldMPreviewRotation != mPreviewRotation) {
+                if (mCamera != null) {
+                    try {
+                        if (backwardsPhone) {
+                            mPreviewRotation = (mPreviewRotation + 180) % 360;
+                        }
+                        mCamera.setDisplayOrientation(mPreviewRotation);
+                        oldPreviewRotation = rotation;
+                        oldMPreviewRotation = mPreviewRotation;
+                    } catch (RuntimeException e) {
+                        Log.e("LOGINOUTERROR", "setPreviewRotation: ", e);
+                    }
                 }
             }
         }
