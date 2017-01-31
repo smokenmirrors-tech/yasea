@@ -14,6 +14,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Surface;
 
+import com.facebook.react.uimanager.ThemedReactContext;
 import com.seu.magicfilter.base.gpuimage.GPUImageFilter;
 import com.seu.magicfilter.utils.MagicFilterFactory;
 import com.seu.magicfilter.utils.MagicFilterType;
@@ -58,10 +59,6 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     private ConcurrentLinkedQueue<IntBuffer> mGLIntBufferCache = new ConcurrentLinkedQueue<>();
     private PreviewCallback mPrevCb;
     private Boolean isFlashOn = false;
-    private int oldPreviewRotation = -1;
-    private int oldMPreviewRotation = -1;
-
-    private Boolean backwardsPhone = false;
 
     public SrsCameraView(Context context) {
         this(context, null);
@@ -69,10 +66,6 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
 
     public SrsCameraView(Context context, AttributeSet attrs) {
         super(context, attrs);
-
-        if((Build.MODEL.equals("Nexus 5X") || Build.MODEL.equals("Nexus 6P") || Build.MODEL.equals("GALAXY S3"))){
-            backwardsPhone = true;
-        }
 
         setEGLContextClientVersion(2);
         setRenderer(this);
@@ -209,21 +202,6 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
 
     public void setPreviewOrientation(int orientation) {
         mPreviewOrientation = orientation;
-        Camera.CameraInfo info = new Camera.CameraInfo();
-        Camera.getCameraInfo(mCamId, info);
-        if (info.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
-            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                mPreviewRotation = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? 270 : 90;
-            } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                mPreviewRotation = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? 180 : 0;
-            }
-        } else if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                mPreviewRotation = 90;
-            } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                mPreviewRotation = 0;
-            }
-        }
     }
 
     public int getCameraId() {
@@ -390,64 +368,32 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         void onGetRgbaFrame(byte[] data, int width, int height);
     }
 
-//    TODO: Use this code to create a proper rotation fix
+    public void setCameraDisplayOrientation(ThemedReactContext mContext) {
+        android.hardware.Camera.CameraInfo info =
+                new android.hardware.Camera.CameraInfo();
 
-//    public static void setCameraDisplayOrientation(Activity activity,
-//                                                   int cameraId, android.hardware.Camera camera) {
-//        android.hardware.Camera.CameraInfo info =
-//                new android.hardware.Camera.CameraInfo();
-//        android.hardware.Camera.getCameraInfo(cameraId, info);
-//        int rotation = activity.getWindowManager().getDefaultDisplay()
-//                .getRotation();
-//        int degrees = 0;
-//        switch (rotation) {
-//            case Surface.ROTATION_0: degrees = 0; break;
-//            case Surface.ROTATION_90: degrees = 90; break;
-//            case Surface.ROTATION_180: degrees = 180; break;
-//            case Surface.ROTATION_270: degrees = 270; break;
-//        }
-//
-//        int result;
-//        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-//            result = (info.orientation + degrees) % 360;
-//            result = (360 - result) % 360;  // compensate the mirror
-//        } else {  // back-facing
-//            result = (info.orientation - degrees + 360) % 360;
-//        }
-//        camera.setDisplayOrientation(result);
-//    }
+        int rotation = mContext.getCurrentActivity().getWindowManager().getDefaultDisplay()
+                .getRotation();
+        int degrees = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0: degrees = 270; break;
+            case Surface.ROTATION_90: degrees = 0; break;
+            case Surface.ROTATION_180: degrees = 90; break;
+            case Surface.ROTATION_270: degrees = 180; break;
+        }
+        Log.i("ROTATIONSHIT", "setCameraDisplayOrientation: degrees: " + degrees);
 
-    public void setPreviewRotation(int rotation){
-        Log.i("ROTATIONFIX", "setPreviewRotation: rotation");
-        if(rotation != oldPreviewRotation) {
-            if (mPreviewOrientation == Configuration.ORIENTATION_PORTRAIT) {
-                if (rotation < 45 || rotation > 315) {
-                    mPreviewRotation = 90;
-                } else if (135 < rotation && rotation < 225) {
-                    mPreviewRotation = 90;
-                }
-            }
-            if (mPreviewOrientation == Configuration.ORIENTATION_LANDSCAPE) {
-                if (45 < rotation && rotation < 135) {
-                    mPreviewRotation = 180;
-                } else if (225 < rotation && rotation < 315) {
-                    mPreviewRotation = 0;
-                }
-            }
-            if(oldMPreviewRotation != mPreviewRotation) {
-                if (mCamera != null) {
-                    try {
-                        if (backwardsPhone) {
-                            mPreviewRotation = (mPreviewRotation + 180) % 360;
-                        }
-                        mCamera.setDisplayOrientation(mPreviewRotation);
-                        oldPreviewRotation = rotation;
-                        oldMPreviewRotation = mPreviewRotation;
-                    } catch (RuntimeException e) {
-                        Log.e("LOGINOUTERROR", "setPreviewRotation: ", e);
-                    }
-                }
-            }
+        int result;
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (info.orientation + degrees) % 360;
+            result = (360 - result) % 360;  // compensate the mirror
+        } else {  // back-facing
+            result = (info.orientation - degrees + 360) % 360;
+        }
+        Log.i("ROTATIONSHIT", "setCameraDisplayOrientation: result: " + result);
+
+        if (mCamera != null) {
+            mCamera.setDisplayOrientation(result);
         }
     }
 
