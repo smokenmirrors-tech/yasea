@@ -18,11 +18,12 @@ public class SrsPublisher {
     private static AcousticEchoCanceler aec;
     private static AutomaticGainControl agc;
     private byte[] mPcmBuffer = new byte[4096];
-    private boolean aloop = false;
+    private byte[] mMuteBuffer = new byte[11];
     private Thread aworker;
 
     private SrsCameraView mCameraView;
 
+    private boolean sendVideoOnly = false;
     private boolean sendAudioOnly = false;
     private int videoFrameCount;
     private long lastTimeMillis;
@@ -67,11 +68,7 @@ public class SrsPublisher {
         mCameraView.stopCamera();
     }
 
-    public void startEncode() {
-        if (!mEncoder.start()) {
-            return;
-        }
-
+    public void startAudio() {
         mic = mEncoder.chooseAudioRecord();
         if (mic == null) {
             return;
@@ -91,17 +88,65 @@ public class SrsPublisher {
             }
         }
 
-        mCameraView.enableEncoding();
-
         aworker = new Thread(new Runnable() {
             @Override
             public void run() {
                 android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO);
-                startAudio();
+                mic.startRecording();
+                while (!Thread.interrupted()) {
+                    if (sendVideoOnly) {
+                        mEncoder.onGetPcmFrame(mMuteBuffer, mMuteBuffer.length);
+                    } else {
+                        int size = mic.read(mPcmBuffer, 0, mPcmBuffer.length);
+                        if (size > 0) {
+                            mEncoder.onGetPcmFrame(mPcmBuffer, size);
+                        }
+                    }
+                }
             }
         });
-        aloop = true;
         aworker.start();
+    }
+
+    public void stopAudio() {
+        if (aworker != null) {
+            aworker.interrupt();
+            try {
+                aworker.join();
+            } catch (InterruptedException e) {
+                aworker.interrupt();
+            }
+            aworker = null;
+        }
+
+        if (mic != null) {
+            mic.setRecordPositionUpdateListener(null);
+            mic.stop();
+            mic.release();
+            mic = null;
+        }
+
+        if (aec != null) {
+            aec.setEnabled(false);
+            aec.release();
+            aec = null;
+        }
+
+        if (agc != null) {
+            agc.setEnabled(false);
+            agc.release();
+            agc = null;
+        }
+    }
+
+    public void startEncode() {
+        if (!mEncoder.start()) {
+            return;
+        }
+
+        mCameraView.enableEncoding();
+
+        startAudio();
     }
 
     public void stopEncode() {
@@ -201,6 +246,10 @@ public class SrsPublisher {
         mEncoder.setVideoSmoothMode();
     }
 
+    public void setSendVideoOnly(boolean flag) {
+        sendVideoOnly = flag;
+    }
+
     public void setSendAudioOnly(boolean flag) {
         sendAudioOnly = flag;
     }
@@ -210,61 +259,17 @@ public class SrsPublisher {
     }
 
     public void switchCameraFace(int id) {
-        if (mEncoder.isEnabled()) {
-            mCameraView.stopCamera();
-            mCameraView.setCameraId(id);
-            if (id == 0) {
-                mEncoder.setCameraBackFace();
-            } else {
-                mEncoder.setCameraFrontFace();
-            }
-            mCameraView.startCamera();
+        mCameraView.stopCamera();
+        mCameraView.setCameraId(id);
+        if (id == 0) {
+            mEncoder.setCameraBackFace();
+        } else {
+            mEncoder.setCameraFrontFace();
         }
-    }
-
-    private void startAudio() {
-        if (mic != null) {
-            mic.startRecording();
-            while (aloop && !Thread.interrupted()) {
-                int size = mic.read(mPcmBuffer, 0, mPcmBuffer.length);
-                if (size <= 0) {
-                    break;
-                }
-                mEncoder.onGetPcmFrame(mPcmBuffer, size);
-            }
+        if (mEncoder != null && mEncoder.isEnabled()) {
+            mCameraView.enableEncoding();
         }
-    }
-
-    private void stopAudio() {
-        aloop = false;
-        if (aworker != null) {
-            aworker.interrupt();
-            try {
-                aworker.join();
-            } catch (InterruptedException e) {
-                aworker.interrupt();
-            }
-            aworker = null;
-        }
-
-        if (mic != null) {
-            mic.setRecordPositionUpdateListener(null);
-            mic.stop();
-            mic.release();
-            mic = null;
-        }
-
-        if (aec != null) {
-            aec.setEnabled(false);
-            aec.release();
-            aec = null;
-        }
-
-        if (agc != null) {
-            agc.setEnabled(false);
-            agc.release();
-            agc = null;
-        }
+        mCameraView.startCamera();
     }
 
     public void setRtmpHandler(RtmpHandler handler) {

@@ -151,7 +151,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         }
         mCamera.getParameters().setPreviewSize(mPreviewWidth, mPreviewHeight);
 
-        mGLPreviewBuffer = ByteBuffer.allocate(mPreviewWidth * mPreviewHeight * 4);
+        mGLPreviewBuffer = ByteBuffer.allocateDirect(mPreviewWidth * mPreviewHeight * 4);
         mInputAspectRatio = mPreviewWidth > mPreviewHeight ?
                 (float) mPreviewWidth / mPreviewHeight : (float) mPreviewHeight / mPreviewWidth;
 
@@ -298,16 +298,6 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         }
 
         Camera.Parameters params = mCamera.getParameters();
-
-        List<String> supportedFocusModes = params.getSupportedFocusModes();
-        if (!supportedFocusModes.isEmpty()) {
-            if (supportedFocusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
-                params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
-            } else {
-                params.setFocusMode(supportedFocusModes.get(0));
-            }
-        }
-
         params.setPictureSize(mPreviewWidth, mPreviewHeight);
         params.setPreviewSize(mPreviewWidth, mPreviewHeight);
         int[] range = adaptFpsRange(SrsEncoder.VFPS, params.getSupportedPreviewFpsRange());
@@ -316,9 +306,28 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
         params.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
         params.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
-        if (!params.getSupportedFocusModes().isEmpty()) {
-            params.setFocusMode(params.getSupportedFocusModes().get(0));
+
+        List<String> supportedFocusModes = params.getSupportedFocusModes();
+        if (supportedFocusModes != null && !supportedFocusModes.isEmpty()) {
+            if (supportedFocusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
+                params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+            } else if (supportedFocusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
+                params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+                mCamera.autoFocus(null);
+            } else {
+                params.setFocusMode(supportedFocusModes.get(0));
+            }
         }
+
+        List<String> supportedFlashModes = params.getSupportedFlashModes();
+        if (supportedFlashModes != null && !supportedFlashModes.isEmpty()) {
+            if (supportedFlashModes.contains(Camera.Parameters.FLASH_MODE_TORCH)) {
+                params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+            } else {
+                params.setFlashMode(supportedFlashModes.get(0));
+            }
+        }
+
         mCamera.setParameters(params);
 
         mCamera.setDisplayOrientation(mPreviewRotation);
