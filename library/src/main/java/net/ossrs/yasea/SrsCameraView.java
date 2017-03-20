@@ -442,4 +442,20 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         mCamera.setParameters(params);
         isFlashOn = false;
     }
+
+    public void setCameraDisplayOrientation(int degrees) {
+        android.hardware.Camera.CameraInfo info =
+                new android.hardware.Camera.CameraInfo();
+        int result;
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (info.orientation + degrees) % 360;
+            result = (360 - result) % 360;  // compensate the mirror
+        } else {  // back-facing
+            result = (info.orientation - degrees + 360) % 360;
+        }
+        if (mCamera != null) {
+            mCamera.setDisplayOrientation(result);
+        }
+    }
+
 }
