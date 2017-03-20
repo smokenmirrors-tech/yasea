@@ -172,6 +172,10 @@ public class SrsEncoder {
         return true;
     }
 
+    public void setBitrate(int bitrate){
+        vBitrate = bitrate * 1024;
+    }
+
     public void stop() {
         if (useSoftEncoder) {
             closeSoftEncoder();
