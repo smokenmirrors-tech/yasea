@@ -319,15 +319,6 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
             }
         }
 
-        List<String> supportedFlashModes = params.getSupportedFlashModes();
-        if (supportedFlashModes != null && !supportedFlashModes.isEmpty()) {
-            if (supportedFlashModes.contains(Camera.Parameters.FLASH_MODE_TORCH)) {
-                params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
-            } else {
-                params.setFlashMode(supportedFlashModes.get(0));
-            }
-        }
-
         mCamera.setParameters(params);
 
         mCamera.setDisplayOrientation(mPreviewRotation);
