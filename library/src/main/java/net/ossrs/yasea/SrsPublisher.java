@@ -18,7 +18,6 @@ public class SrsPublisher {
     private static AcousticEchoCanceler aec;
     private static AutomaticGainControl agc;
     private byte[] mPcmBuffer = new byte[4096];
-    private byte[] mMuteBuffer = new byte[11];
     private Thread aworker;
 
     private SrsCameraView mCameraView;
@@ -95,7 +94,13 @@ public class SrsPublisher {
                 mic.startRecording();
                 while (!Thread.interrupted()) {
                     if (sendVideoOnly) {
-                        mEncoder.onGetPcmFrame(mMuteBuffer, mMuteBuffer.length);
+                        mEncoder.onGetPcmFrame(mPcmBuffer, mPcmBuffer.length);
+                        try {
+                            // This is trivial...
+                            Thread.sleep(20);
+                        } catch (InterruptedException e) {
+                            break;
+                        }
                     } else {
                         int size = mic.read(mPcmBuffer, 0, mPcmBuffer.length);
                         if (size > 0) {
@@ -247,6 +252,14 @@ public class SrsPublisher {
     }
 
     public void setSendVideoOnly(boolean flag) {
+        if (mic != null) {
+            if (flag) {
+                mic.stop();
+                mPcmBuffer = new byte[4096];
+            } else {
+                mic.startRecording();
+            }
+        }
         sendVideoOnly = flag;
     }
 

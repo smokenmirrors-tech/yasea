@@ -24,7 +24,7 @@ public class SrsEncoder {
     public static final String ACODEC = "audio/mp4a-latm";
     public static String x264Preset = "veryfast";
     public static int vPrevWidth = 640;
-    public static int vPrevHeight = 480;
+    public static int vPrevHeight = 360;
     public static int vPortraitWidth = 720;
     public static int vPortraitHeight = 1280;
     public static int vLandscapeWidth = 1280;
@@ -97,7 +97,7 @@ public class SrsEncoder {
 
         // Note: the stride of resolution must be set as 16x for hard encoding with some chip like MTK
         // Since Y component is quadruple size as U and V component, the stride must be set as 32x
-        if (!useSoftEncoder && vOutWidth % 32 != 0 || vOutHeight % 32 != 0) {
+        if (!useSoftEncoder && (vOutWidth % 32 != 0 || vOutHeight % 32 != 0)) {
             if (vmci.getName().contains("MTK")) {
                 //throw new AssertionError("MTK encoding revolution stride must be 32x");
             }
@@ -289,7 +289,7 @@ public class SrsEncoder {
         
         // Note: the stride of resolution must be set as 16x for hard encoding with some chip like MTK
         // Since Y component is quadruple size as U and V component, the stride must be set as 32x
-        if (!useSoftEncoder && vOutWidth % 32 != 0 || vOutHeight % 32 != 0) {
+        if (!useSoftEncoder && (vOutWidth % 32 != 0 || vOutHeight % 32 != 0)) {
             if (vmci.getName().contains("MTK")) {
                 //throw new AssertionError("MTK encoding revolution stride must be 32x");
             }
