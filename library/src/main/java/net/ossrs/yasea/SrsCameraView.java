@@ -8,7 +8,6 @@ import android.hardware.Camera;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
-import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 
@@ -39,6 +38,7 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     private int mPreviewWidth;
     private boolean mIsEncoding;
     private int mPreviewHeight;
+    private boolean mIsTorchOn = false;
     private float mInputAspectRatio;
     private float mOutputAspectRatio;
     private float[] mProjectionMatrix = new float[16];
@@ -199,47 +199,24 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
     }
 
     public void setPreviewOrientation(int orientation) {
-        mPreviewOrientation = orientation;
-//        Camera.CameraInfo info = new Camera.CameraInfo();
-//        Camera.getCameraInfo(mCamId, info);
-//        if (info.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
-//            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-//                mPreviewRotation = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? 270 : 90;
-//            } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-//                mPreviewRotation = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? 180 : 0;
-//            }
-//        } else if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-//            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-//                mPreviewRotation = 90;
-//            } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-//                mPreviewRotation = 0;
-//            }
-//        }
-//        if(mCamera != null){
-//            mCamera.setDisplayOrientation(mPreviewRotation);
-//        }
-    }
-
-    public void setPreviewRotation(int rotation){
-        if(mPreviewOrientation  == Configuration.ORIENTATION_PORTRAIT){
-            if (rotation < 45 || rotation > 315) {
-                mPreviewRotation = 90;
-            } else
-            if (135 < rotation && rotation < 225) {
-                mPreviewRotation = 90;
-            }
-        }
-        if(mPreviewOrientation == Configuration.ORIENTATION_LANDSCAPE) {
-            if (45 < rotation && rotation < 135) {
-                mPreviewRotation = 180;
-            } else
-            if (225 < rotation && rotation < 315) {
-                mPreviewRotation = 0;
-            }
-        }
-        if(mCamera != null){
-            mCamera.setDisplayOrientation(mPreviewRotation);
-        }
+      mPreviewOrientation = orientation;
+      Camera.CameraInfo info = new Camera.CameraInfo();
+      Camera.getCameraInfo(mCamId, info);
+      if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+          if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+              mPreviewRotation = info.orientation % 360;
+              mPreviewRotation = (360 - mPreviewRotation) % 360;  // compensate the mirror
+          } else {
+              mPreviewRotation = (info.orientation + 360) % 360;
+          }
+      } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+          if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+              mPreviewRotation = (info.orientation + 90) % 360;
+              mPreviewRotation = (360 - mPreviewRotation) % 360;  // compensate the mirror
+          } else {
+              mPreviewRotation = (info.orientation + 270) % 360;
+          }
+      }
     }
 
     public int getCameraId() {
@@ -322,7 +299,9 @@ public class SrsCameraView extends GLSurfaceView implements GLSurfaceView.Render
         List<String> supportedFlashModes = params.getSupportedFlashModes();
         if (supportedFlashModes != null && !supportedFlashModes.isEmpty()) {
             if (supportedFlashModes.contains(Camera.Parameters.FLASH_MODE_TORCH)) {
-                params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+                if (mIsTorchOn) {
+                    params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+                }
             } else {
                 params.setFlashMode(supportedFlashModes.get(0));
             }
